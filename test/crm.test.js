@@ -7,8 +7,11 @@ import {
   filterByOwner,
   forecastCategory,
   riskLabel,
+  riskFactors,
   scoreDealRisk,
+  summarizeForecastCategories,
   summarizeOwners,
+  summarizeOwnerRisk,
   summarizePipeline
 } from "../src/crm.js";
 
@@ -98,6 +101,39 @@ describe("scoreDealRisk", () => {
 
     assert.equal(riskLabel(score), "Low");
   });
+
+  it("uses active risk factors as the score source and caps the displayed score", () => {
+    const factors = riskFactors(data.opportunities[0], data.accounts[0]).filter((factor) => factor.active);
+    const rawScore = factors.reduce((sum, factor) => sum + factor.points, 0);
+
+    assert.equal(rawScore, 116);
+    assert.equal(scoreDealRisk(data.opportunities[0], data.accounts[0]), 100);
+  });
+
+  it("identifies each active risk driver for a critical deal", () => {
+    const activeFactorIds = riskFactors(data.opportunities[0], data.accounts[0])
+      .filter((factor) => factor.active)
+      .map((factor) => factor.id);
+
+    assert.deepEqual(activeFactorIds, [
+      "stale-activity",
+      "missing-next-step",
+      "weak-contact-coverage",
+      "close-date-pressure",
+      "large-deal",
+      "account-health"
+    ]);
+  });
+
+  it("keeps inactive risk factors available for explanation logic", () => {
+    const factors = riskFactors(data.opportunities[1], data.accounts[1]);
+
+    assert.equal(factors.length, 6);
+    assert.deepEqual(
+      factors.filter((factor) => factor.active).map((factor) => factor.id),
+      []
+    );
+  });
 });
 
 describe("enrichOpportunities", () => {
@@ -108,6 +144,7 @@ describe("enrichOpportunities", () => {
     assert.equal(opportunities[0].account.name, "Enterprise Co");
     assert.equal(opportunities[0].weightedAmount, 60000);
     assert.equal(opportunities[0].forecastCategory, "At Risk");
+    assert.equal(opportunities[0].riskFactors.length, 6);
   });
 });
 
@@ -137,6 +174,51 @@ describe("summarizePipeline", () => {
   });
 });
 
+describe("risk view summaries", () => {
+  it("summarizes forecast categories using raw open pipeline amount", () => {
+    assert.deepEqual(summarizeForecastCategories(data), [
+      { category: "Commit", amount: 50000, count: 1 },
+      { category: "Best Case", amount: 0, count: 0 },
+      { category: "Pipeline", amount: 0, count: 0 },
+      { category: "At Risk", amount: 150000, count: 1 }
+    ]);
+  });
+
+  it("summarizes owner risk for all owners", () => {
+    assert.deepEqual(summarizeOwnerRisk(data), [
+      {
+        owner: "Jordan Lee",
+        openPipeline: 50000,
+        weightedPipeline: 35000,
+        highRiskDeals: 0,
+        criticalDeals: 0,
+        overdueTasks: 0
+      },
+      {
+        owner: "Maya Chen",
+        openPipeline: 150000,
+        weightedPipeline: 60000,
+        highRiskDeals: 1,
+        criticalDeals: 1,
+        overdueTasks: 1
+      }
+    ]);
+  });
+
+  it("summarizes owner risk for a selected owner", () => {
+    assert.deepEqual(summarizeOwnerRisk(data, "Maya Chen"), [
+      {
+        owner: "Maya Chen",
+        openPipeline: 150000,
+        weightedPipeline: 60000,
+        highRiskDeals: 1,
+        criticalDeals: 1,
+        overdueTasks: 1
+      }
+    ]);
+  });
+});
+
 describe("owner and account helpers", () => {
   it("lists owners alphabetically", () => {
     assert.deepEqual(summarizeOwners(data), ["Jordan Lee", "Maya Chen"]);
@@ -160,4 +242,3 @@ describe("owner and account helpers", () => {
     assert.equal(snapshot.activities.length, 1);
   });
 });
-

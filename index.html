@@ -12,11 +12,17 @@
         <p class="eyebrow">Pipeline Pulse CRM</p>
         <h1>CRM Pipeline Dashboard</h1>
       </div>
-      <div class="header-actions">
-        <label for="owner-filter">Owner</label>
-        <select id="owner-filter">
-          <option value="all">All owners</option>
-        </select>
+      <div class="header-controls">
+        <nav class="view-tabs" aria-label="Dashboard views" role="tablist">
+          <button class="view-tab is-active" type="button" role="tab" data-view="pipeline" aria-selected="true">Pipeline</button>
+          <button class="view-tab" type="button" role="tab" data-view="risk" aria-selected="false">Risk</button>
+        </nav>
+        <div class="header-actions">
+          <label for="owner-filter">Owner</label>
+          <select id="owner-filter">
+            <option value="all">All owners</option>
+          </select>
+        </div>
       </div>
     </header>
 
@@ -40,22 +46,65 @@
         </article>
       </section>
 
-      <section class="layout">
-        <aside class="account-panel">
-          <h2>Account Health</h2>
-          <div id="account-list" class="account-list"></div>
-        </aside>
+      <section id="pipeline-view" class="view-section" data-view-panel="pipeline">
+        <section class="layout">
+          <aside class="account-panel">
+            <h2>Account Health</h2>
+            <div id="account-list" class="account-list"></div>
+          </aside>
 
-        <section class="pipeline-panel">
+          <section class="pipeline-panel">
+            <div class="panel-heading">
+              <h2>Open Opportunities</h2>
+              <p id="result-count">0 deals</p>
+            </div>
+            <div id="opportunity-list" class="opportunity-list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="risk-view" class="view-section" data-view-panel="risk" hidden>
+        <section class="risk-grid" aria-label="Risk matrix dashboard">
+          <article class="risk-matrix-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Deal Risk Matrix</h2>
+                <p>Risk score by open deal amount</p>
+              </div>
+            </div>
+            <div id="risk-legend" class="risk-legend" aria-label="Risk matrix legend"></div>
+            <div id="risk-matrix" class="risk-matrix"></div>
+          </article>
+
+          <aside id="risk-detail" class="risk-detail-panel" aria-label="Selected deal details"></aside>
+        </section>
+
+        <section class="risk-support-grid" aria-label="Risk supporting summaries">
+          <article class="summary-panel">
+            <div class="panel-heading">
+              <h2>Forecast Exposure</h2>
+            </div>
+            <div id="forecast-breakdown" class="forecast-breakdown"></div>
+          </article>
+
+          <article class="summary-panel">
+            <div class="panel-heading">
+              <h2 id="owner-summary-title">Owner Risk Summary</h2>
+            </div>
+            <div id="owner-risk-summary" class="owner-risk-summary"></div>
+          </article>
+        </section>
+
+        <section class="risk-deal-list-panel" aria-label="Selectable risk deals">
           <div class="panel-heading">
-            <h2>Open Opportunities</h2>
-            <p id="result-count">0 deals</p>
+            <h2>Deals in View</h2>
+            <p id="risk-result-count">0 deals</p>
           </div>
-          <div id="opportunity-list" class="opportunity-list"></div>
+          <div id="risk-deal-list" class="risk-deal-list"></div>
         </section>
       </section>
     </main>
 
-    <script type="module" src="src/main.js"></script>
+    <script type="module" src="src/main.js?v=risk-dashboard"></script>
   </body>
 </html>
