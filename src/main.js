@@ -97,12 +97,6 @@ function renderOpportunities(opportunities) {
           <div><dt>Amount</dt><dd>$${formatCompact(opportunity.amount)}</dd></div>
           <div><dt>Weighted</dt><dd>$${formatCompact(opportunity.weightedAmount)}</dd></div>
         </dl>
-        <div class="tags">
-          <span>${opportunity.forecastCategory}</span>
-          <span>${opportunity.probability}% probability</span>
-          <span>${opportunity.lastActivityDays} days since activity</span>
-          <span>${opportunity.contactCoverage} contacts</span>
-        </div>
       `;
       return card;
     })
