@@ -6,6 +6,7 @@ import {
   enrichOpportunities,
   filterByOwner,
   forecastCategory,
+  riskReasonsForOpportunity,
   riskLabel,
   scoreDealRisk,
   summarizeOwners,
@@ -100,6 +101,78 @@ describe("scoreDealRisk", () => {
   });
 });
 
+describe("riskReasonsForOpportunity", () => {
+  it("returns sorted reason metadata with labels, score impacts, and sources", () => {
+    const reasons = riskReasonsForOpportunity(data.opportunities[0], data.accounts[0]);
+
+    assert.deepEqual(reasons, [
+      {
+        label: "No activity in 21+ days",
+        scoreImpact: 30,
+        source: "activity"
+      },
+      {
+        label: "Missing next step",
+        scoreImpact: 24,
+        source: "nextStep"
+      },
+      {
+        label: "Account health: At Risk",
+        scoreImpact: 24,
+        source: "accountHealth"
+      },
+      {
+        label: "Low contact coverage",
+        scoreImpact: 16,
+        source: "contacts"
+      },
+      {
+        label: "Closing soon before Negotiation",
+        scoreImpact: 12,
+        source: "closeDate"
+      },
+      {
+        label: "Large deal",
+        scoreImpact: 10,
+        source: "amount"
+      }
+    ]);
+  });
+
+  it("treats whitespace-only next steps as missing", () => {
+    const reasons = riskReasonsForOpportunity(
+      {
+        ...data.opportunities[1],
+        nextStep: "   "
+      },
+      data.accounts[1]
+    );
+
+    assert.deepEqual(reasons, [
+      {
+        label: "Missing next step",
+        scoreImpact: 24,
+        source: "nextStep"
+      }
+    ]);
+  });
+
+  it("does not add close-date or unknown account-health reasons when they do not contribute", () => {
+    const reasons = riskReasonsForOpportunity(
+      {
+        ...data.opportunities[1],
+        closeDate: "2026-06-01"
+      },
+      {
+        ...data.accounts[1],
+        health: "Unknown"
+      }
+    );
+
+    assert.deepEqual(reasons, []);
+  });
+});
+
 describe("enrichOpportunities", () => {
   it("adds account, weighted amount, risk, and forecast details", () => {
     const opportunities = enrichOpportunities(data);
@@ -108,6 +181,16 @@ describe("enrichOpportunities", () => {
     assert.equal(opportunities[0].account.name, "Enterprise Co");
     assert.equal(opportunities[0].weightedAmount, 60000);
     assert.equal(opportunities[0].forecastCategory, "At Risk");
+  });
+
+  it("adds sorted risk reasons to enriched opportunities", () => {
+    const opportunities = enrichOpportunities(data);
+
+    assert.deepEqual(
+      opportunities[0].riskReasons.map((reason) => reason.source),
+      ["activity", "nextStep", "accountHealth", "contacts", "closeDate", "amount"]
+    );
+    assert.deepEqual(opportunities[1].riskReasons, []);
   });
 });
 
@@ -144,11 +227,13 @@ describe("owner and account helpers", () => {
 
   it("filters enriched opportunities by owner", () => {
     const opportunities = enrichOpportunities(data);
+    const mayaOpportunities = filterByOwner(opportunities, "Maya Chen");
 
     assert.deepEqual(
-      filterByOwner(opportunities, "Maya Chen").map((opportunity) => opportunity.id),
+      mayaOpportunities.map((opportunity) => opportunity.id),
       ["opp-a"]
     );
+    assert.equal(mayaOpportunities[0].riskReasons[0].label, "No activity in 21+ days");
   });
 
   it("returns account context for meeting prep style features", () => {
@@ -160,4 +245,3 @@ describe("owner and account helpers", () => {
     assert.equal(snapshot.activities.length, 1);
   });
 });
-
