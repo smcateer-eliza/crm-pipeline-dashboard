@@ -16,6 +16,7 @@ export function enrichOpportunities(data) {
         account,
         weightedAmount: Math.round(opportunity.amount * (opportunity.probability / 100)),
         riskScore,
+        riskReasons: riskReasonsForOpportunity(opportunity, account),
         riskLabel: riskLabel(riskScore),
         forecastCategory: forecastCategory(opportunity, riskScore)
       };
@@ -24,20 +25,78 @@ export function enrichOpportunities(data) {
 }
 
 export function scoreDealRisk(opportunity, account) {
-  let score = 0;
-
-  if (opportunity.lastActivityDays >= 21) score += 30;
-  else if (opportunity.lastActivityDays >= 14) score += 18;
-  else if (opportunity.lastActivityDays >= 7) score += 8;
-
-  if (!opportunity.nextStep.trim()) score += 24;
-  if (opportunity.contactCoverage < 2) score += 16;
-  if (daysUntil(opportunity.closeDate) <= 21 && opportunity.stage !== "Negotiation") score += 12;
-  if (opportunity.amount >= 100000) score += 10;
-
-  score += HEALTH_RISK[account.health] ?? 0;
-
+  const score = riskReasonsForOpportunity(opportunity, account).reduce(
+    (total, reason) => total + reason.scoreImpact,
+    0
+  );
   return Math.min(score, 100);
+}
+
+export function riskReasonsForOpportunity(opportunity, account) {
+  const reasons = [];
+
+  if (opportunity.lastActivityDays >= 21) {
+    reasons.push({
+      label: "No activity in 21+ days",
+      scoreImpact: 30,
+      source: "activity"
+    });
+  } else if (opportunity.lastActivityDays >= 14) {
+    reasons.push({
+      label: "No activity in 14+ days",
+      scoreImpact: 18,
+      source: "activity"
+    });
+  } else if (opportunity.lastActivityDays >= 7) {
+    reasons.push({
+      label: "No activity in 7+ days",
+      scoreImpact: 8,
+      source: "activity"
+    });
+  }
+
+  if (!opportunity.nextStep.trim()) {
+    reasons.push({
+      label: "Missing next step",
+      scoreImpact: 24,
+      source: "nextStep"
+    });
+  }
+
+  if (opportunity.contactCoverage < 2) {
+    reasons.push({
+      label: "Low contact coverage",
+      scoreImpact: 16,
+      source: "contacts"
+    });
+  }
+
+  if (daysUntil(opportunity.closeDate) <= 21 && opportunity.stage !== "Negotiation") {
+    reasons.push({
+      label: "Closing soon before Negotiation",
+      scoreImpact: 12,
+      source: "closeDate"
+    });
+  }
+
+  if (opportunity.amount >= 100000) {
+    reasons.push({
+      label: "Large deal",
+      scoreImpact: 10,
+      source: "amount"
+    });
+  }
+
+  const accountHealthImpact = HEALTH_RISK[account.health] ?? 0;
+  if (accountHealthImpact > 0) {
+    reasons.push({
+      label: `Account health: ${account.health}`,
+      scoreImpact: accountHealthImpact,
+      source: "accountHealth"
+    });
+  }
+
+  return reasons.sort((a, b) => b.scoreImpact - a.scoreImpact);
 }
 
 export function riskLabel(score) {
@@ -108,4 +167,3 @@ function daysUntil(dateString) {
 function isOverdue(dateString) {
   return daysUntil(dateString) < 0;
 }
-
