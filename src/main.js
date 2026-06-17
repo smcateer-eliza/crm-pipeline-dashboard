@@ -97,10 +97,25 @@ function renderOpportunities(opportunities) {
           <div><dt>Amount</dt><dd>$${formatCompact(opportunity.amount)}</dd></div>
           <div><dt>Weighted</dt><dd>$${formatCompact(opportunity.weightedAmount)}</dd></div>
         </dl>
+        ${renderRiskReasons(opportunity)}
       `;
       return card;
     })
   );
+}
+
+function renderRiskReasons(opportunity) {
+  if (opportunity.riskLabel === "Low") {
+    return `<p class="risk-empty">No major risk drivers</p>`;
+  }
+
+  if (!opportunity.riskReasons.length) return "";
+
+  return `
+    <ul class="risk-reasons" aria-label="Risk drivers">
+      ${opportunity.riskReasons.map((reason) => `<li>${reason.label}</li>`).join("")}
+    </ul>
+  `;
 }
 
 function formatCompact(value) {
