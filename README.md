@@ -80,6 +80,7 @@ Core logic lives in `src/crm.js`.
 ## Development Notes
 
 - Keep CRM calculations deterministic so sales users can understand why a deal is flagged.
+- This test PR verifies that repository write access and review flow are working.
 - Update tests whenever scoring, forecast, filtering, or summary behavior changes.
 - Keep browser code in `src/main.js` thin; business rules belong in `src/crm.js`.
 - Avoid adding external dependencies unless they materially simplify the app.
